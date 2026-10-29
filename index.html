@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#15162b">
+<title>AI PhotoShop</title>
+<style>
+:root{--bg:#f5f6fb;--ink:#17182d;--card:#fff;--accent:#6c4cff;--muted:#6d7085}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#17182d,#34256b);color:#fff;padding:24px 18px 28px;border-radius:0 0 26px 26px}
+.brand{font-size:26px;font-weight:850;letter-spacing:.2px}.tag{opacity:.86;margin-top:5px}
+.wrap{max-width:980px;margin:auto;padding:16px}.notice{background:#fff7dc;border:1px solid #f2d88a;border-radius:12px;padding:12px;font-size:13px;line-height:1.5;margin-bottom:16px}
+h2{font-size:19px;margin:20px 0 10px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tool{background:var(--card);border:1px solid #e7e7f1;border-radius:15px;padding:15px;text-align:left;cursor:pointer;color:var(--ink);box-shadow:0 3px 10px #17182d08}
+.tool b{display:block;margin:7px 0 3px}.tool small{color:var(--muted);line-height:1.4}.ico{font-size:25px}
+.panel{background:#fff;border:1px solid #e6e6f0;border-radius:17px;padding:16px;margin-top:16px}
+label{font-size:14px;font-weight:650;display:block;margin:10px 0 5px}
+input,select,button{font:inherit}input[type=file],input[type=number],select{width:100%;padding:11px;border:1px solid #d8d9e7;border-radius:10px;background:#fff}
+input[type=checkbox]{width:auto}button,.btn{border:0;background:var(--accent);color:white;border-radius:10px;padding:11px 14px;font-weight:700;cursor:pointer;display:inline-block;text-decoration:none;margin:8px 5px 0 0}
+button.secondary{background:#ece9ff;color:#3c2b9d}button:disabled{opacity:.45;cursor:not-allowed}
+.preview{width:100%;max-height:440px;object-fit:contain;background:#f0f0f5;border-radius:12px;margin-top:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hint{font-size:12px;color:var(--muted);line-height:1.5}
+footer{text-align:center;color:var(--muted);padding:25px 10px;font-size:12px}
+@media(min-width:650px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.wrap{padding:22px}}
+</style>
+</head>
+<body>
+<header><div class="wrap" style="padding:0 4px"><div class="brand">📸 AI PhotoShop</div><div class="tag">ছবির সব কাজ, এক অ্যাপেই।</div></div></header>
+<main class="wrap">
+<div class="notice"><b>প্রথম সংস্করণ:</b> সাধারণ ছবি রিসাইজ, কম্প্রেস, ব্যাকগ্রাউন্ড রঙ, এক পাতায় একাধিক ছবি সাজানো এবং প্রিন্ট করা যাবে। AI দিয়ে ছবি তৈরি/ব্যাকগ্রাউন্ড স্বয়ংক্রিয়ভাবে মুছতে পরে নিরাপদ AI সার্ভিস/API যুক্ত করতে হবে। সরকারি কার্ড নিজে তৈরি বা নকল নয়—শুধু আবেদনের জন্য ছবি প্রস্তুত করুন।</div>
+<h2>সব ফটো টুল</h2>
+<div class="grid">
+<button class="tool" onclick="setMode('resize')"><span class="ico">📐</span><b>Photo Resizer</b><small>Pixel মাপ ও অনুপাত বদলান</small></button>
+<button class="tool" onclick="setMode('compress')"><span class="ico">🗜️</span><b>KB Compressor</b><small>ছবির ফাইল সাইজ কমান</small></button>
+<button class="tool" onclick="setMode('id')"><span class="ico">🪪</span><b>Passport / ID Photo</b><small>ছবি ক্রপ, ব্যাকগ্রাউন্ড রঙ</small></button>
+<button class="tool" onclick="setMode('sheet')"><span class="ico">🖨️</span><b>Multiple Photo Print</b><small>এক পাতায় একাধিক কপি</small></button>
+<button class="tool" onclick="setMode('edit')"><span class="ico">🎨</span><b>Basic Photo Editor</b><small>উজ্জ্বলতা ও কনট্রাস্ট</small></button>
+<button class="tool" onclick="setMode('pdf')"><span class="ico">📄</span><b>Print / Save as PDF</b><small>প্রিন্ট ডায়ালগ থেকে PDF</small></button>
+</div>
+<section class="panel">
+<h2 id="panelTitle" style="margin-top:0">ছবি বেছে নিন</h2>
+<label for="file">আপনার ছবি নির্বাচন করুন</label><input id="file" type="file" accept="image/*">
+<img id="preview" class="preview" alt="ছবির প্রিভিউ" hidden>
+<div id="controls"></div>
+<div id="result"></div>
+</section>
+<footer>AI PhotoShop • প্রাথমিক ব্যবহারযোগ্য প্রোটোটাইপ • ছবিগুলো আপনার ব্রাউজারেই প্রসেস হয়</footer>
+</main>
+<script>
+const fileInput=document.getElementById('file'), preview=document.getElementById('preview'), controls=document.getElementById('controls'), result=document.getElementById('result'), title=document.getElementById('panelTitle');
+let img=null, mode='resize', originalName='photo';
+function setMode(m){mode=m;result.innerHTML='';renderControls();document.querySelector('.panel').scrollIntoView({behavior:'smooth',block:'start'});}
+fileInput.addEventListener('change',()=>{const f=fileInput.files[0];if(!f)return;originalName=(f.name||'photo').replace(/\.[^.]+$/,'');const u=URL.createObjectURL(f);img=new Image();img.onload=()=>{preview.src=u;preview.hidden=false;renderControls();};img.src=u;});
+function field(label,id,val,type='number',extra=''){return `<label for="${id}">${label}</label><input id="${id}" type="${type}" value="${val}" ${extra}>`;}
+function renderControls(){
+const names={resize:'Photo Resizer',compress:'KB Compressor',id:'Passport / ID Photo',sheet:'Multiple Photo Print',edit:'Basic Photo Editor',pdf:'Print / Save as PDF'};
+title.textContent=names[mode]||'ফটো টুল';
+if(!img){controls.innerHTML='<p class="hint">প্রথমে উপরের বাটন থেকে টুল বেছে নিন, তারপর একটি ছবি আপলোড করুন।</p>';return;}
+if(mode==='resize') controls.innerHTML=`<div class="row">${field('প্রস্থ (px)','w',600)}${field('উচ্চতা (px)','h',600)}</div><label><input id="keep" type="checkbox" checked> অনুপাত বজায় রাখুন</label><button onclick="downloadResized()">Resize & Download</button>`;
+if(mode==='compress') controls.innerHTML=`${field('Quality (10–100%)','quality',75)}<button onclick="downloadCompressed()">Compress & Download</button><p class="hint">এটি JPEG quality কমিয়ে ফাইল ছোট করে। নির্দিষ্ট KB সব ছবিতে নিশ্চিত করা যায় না।</p>`;
+if(mode==='id') controls.innerHTML=`<div class="row">${field('প্রস্থ (px)','w',413)}${field('উচ্চতা (px)','h',531)}</div><label>ব্যাকগ্রাউন্ডের রং</label><select id="bg"><option value="#ffffff">সাদা</option><option value="#dceeff">হালকা নীল</option><option value="#d9f2df">হালকা সবুজ</option></select><label>ফিট করার ধরন</label><select id="fit"><option value="contain">পুরো ছবি দেখান (contain)</option><option value="cover">ফ্রেম পূরণ করুন (cover)</option></select><button onclick="downloadID()">ID Photo তৈরি করুন</button><p class="hint">মাপ উদাহরণমাত্র; আবেদন/দেশ/ফর্মের নির্দেশ অনুযায়ী সঠিক মাপ নির্বাচন করুন।</p>`;
+if(mode==='sheet') controls.innerHTML=`<div class="row">${field('এক লাইনে কপি','cols',3)}${field('মোট লাইন','rows',3)}</div><div class="row">${field('প্রতি ছবির প্রস্থ (mm)','mmw',35)}${field('প্রতি ছবির উচ্চতা (mm)','mmh',45)}</div><label>পেপার</label><select id="paper"><option value="A4">A4</option><option value="4x6">4×6 inch</option></select><button onclick="makeSheet()">প্রিন্ট শিট তৈরি করুন</button><p class="hint">প্রিন্ট করার সময় Scale 100% / Actual size বেছে নিন।</p>`;
+if(mode==='edit') controls.innerHTML=`<div class="row">${field('Brightness (%)','bright',100)}${field('Contrast (%)','contrast',100)}</div><button onclick="downloadEdited()">Apply & Download</button>`;
+if(mode==='pdf') controls.innerHTML=`<button onclick="printPhoto()">ছবি প্রিন্ট / Save as PDF</button><p class="hint">প্রিন্ট উইন্ডোতে “Save as PDF” নির্বাচন করতে পারবেন।</p>`;
+}
+function canvasFor(w,h,opts={}){const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));const x=c.getContext('2d');if(opts.bg){x.fillStyle=opts.bg;x.fillRect(0,0,c.width,c.height)}if(opts.filter)x.filter=opts.filter;
+let dw=c.width,dh=c.height,sw=img.naturalWidth,sh=img.naturalHeight;
+if(opts.fit==='cover'){let scale=Math.max(dw/sw,dh/sh);let rw=sw*scale,rh=sh*scale;x.drawImage(img,(dw-rw)/2,(dh-rh)/2,rw,rh);}
+else {let scale=Math.min(dw/sw,dh/sh);let rw=sw*scale,rh=sh*scale;x.drawImage(img,(dw-rw)/2,(dh-rh)/2,rw,rh);}
+return c;}
+function saveCanvas(c,name,q=.92,mime='image/jpeg'){const a=document.createElement('a');a.href=c.toDataURL(mime,q);a.download=name;a.click();}
+function downloadResized(){let w=+document.getElementById('w').value,h=+document.getElementById('h').value;if(!w||!h)return alert('সঠিক মাপ দিন');if(document.getElementById('keep').checked){let r=Math.min(w/img.naturalWidth,h/img.naturalHeight);w=Math.round(img.naturalWidth*r);h=Math.round(img.naturalHeight*r);}saveCanvas(canvasFor(w,h),originalName+'_resized.jpg');}
+function downloadCompressed(){let q=Math.min(100,Math.max(10,+document.getElementById('quality').value||75))/100;saveCanvas(canvasFor(img.naturalWidth,img.naturalHeight),originalName+'_compressed.jpg',q);}
+function downloadID(){let w=+document.getElementById('w').value,h=+document.getElementById('h').value;if(!w||!h)return alert('সঠিক মাপ দিন');let c=canvasFor(w,h,{bg:document.getElementById('bg').value,fit:document.getElementById('fit').value});saveCanvas(c,originalName+'_id-photo.jpg');}
+function downloadEdited(){let b=+document.getElementById('bright').value||100,co=+document.getElementById('contrast').value||100;let c=canvasFor(img.naturalWidth,img.naturalHeight,{filter:`brightness(${b}%) contrast(${co}%)`});saveCanvas(c,originalName+'_edited.jpg');}
+function makeSheet(){let cols=Math.max(1,Math.min(10,+document.getElementById('cols').value||3)),rows=Math.max(1,Math.min(12,+document.getElementById('rows').value||3)),mw=+document.getElementById('mmw').value||35,mh=+document.getElementById('mmh').value||45;let paper=document.getElementById('paper').value;let pw=paper==='A4'?210:152.4,ph=paper==='A4'?297:101.6;let scale=3.78;let c=document.createElement('canvas');c.width=Math.round(pw*scale);c.height=Math.round(ph*scale);let x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);let iw=mw*scale,ih=mh*scale,gap=3*scale,totalW=cols*iw+(cols-1)*gap,totalH=rows*ih+(rows-1)*gap;let sx=(c.width-totalW)/2,sy=(c.height-totalH)/2;if(totalW>c.width||totalH>c.height)return alert('এই পেপারে এতগুলো ছবি ধরবে না। কপি বা মাপ কমান।');for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){let xx=sx+col*(iw+gap),yy=sy+r*(ih+gap);x.drawImage(img,xx,yy,iw,ih);x.strokeStyle='#999';x.lineWidth=1;x.strokeRect(xx,yy,iw,ih);}let url=c.toDataURL('image/jpeg',.95);let win=window.open('','_blank');if(!win){let a=document.createElement('a');a.href=url;a.download='photo-print-sheet.jpg';a.click();return;}win.document.write(`<html><head><title>Photo Print Sheet</title><style>@page{size:${paper==='A4'?'A4':'6in 4in'};margin:0}body{margin:0}img{width:100%;height:100%;object-fit:fill}</style></head><body><img src="${url}" onload="setTimeout(()=>window.print(),400)"></body></html>`);win.document.close();}
+function printPhoto(){let url=preview.src;let win=window.open('','_blank');if(!win)return alert('পপ-আপ অনুমতি দিন');win.document.write(`<html><head><title>AI PhotoShop Print</title><style>body{margin:0;text-align:center}img{max-width:100%;max-height:95vh;object-fit:contain}@media print{@page{margin:10mm}}</style></head><body><img src="${url}" onload="setTimeout(()=>window.print(),300)"></body></html>`);win.document.close();}
+renderControls();
+</script>
+</body></html>
